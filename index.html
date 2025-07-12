@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oráculo Digital Conversacional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #111827; /* gray-900 */
+            --bg-secondary: #1f2937; /* gray-800 */
+            --bg-tertiary: #374151; /* gray-700 */
+            --bg-accent: #4f46e5; /* indigo-600 */
+            --text-primary: #f3f4f6; /* gray-100 */
+            --text-secondary: #9ca3af; /* gray-400 */
+            --accent-primary: #a78bfa; /* violet-400 */
+            --font-display: 'Cinzel', serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        .theme-light {
+            --bg-primary: #f0f9ff; /* sky-50 */
+            --bg-secondary: #e0f2fe; /* sky-100 */
+            --bg-tertiary: #bae6fd; /* sky-200 */
+            --bg-accent: #0284c7; /* sky-600 */
+            --text-primary: #0c4a6e; /* sky-900 */
+            --text-secondary: #38bdf8; /* sky-500 */
+            --accent-primary: #0ea5e9; /* sky-500 */
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.5s, color 0.5s;
+        }
+        .font-cinzel { font-family: var(--font-display); }
+        .chat-bubble { max-width: 80%; padding: 12px 16px; border-radius: 20px; word-wrap: break-word; line-height: 1.6; }
+        .user-bubble { background-color: var(--bg-accent); color: white; border-bottom-right-radius: 4px; align-self: flex-end; }
+        .ai-bubble { background-color: var(--bg-secondary); color: var(--text-primary); border-bottom-left-radius: 4px; align-self: flex-start; }
+        .loader { border: 3px solid var(--accent-primary); border-top: 3px solid transparent; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        @media print {
+            body * { visibility: hidden; }
+            #report-modal-content, #report-modal-content * { visibility: visible; }
+            #report-modal-content { position: absolute; left: 0; top: 0; width: 100%; }
+            #print-button, #close-report-button { display: none; }
+        }
+    </style>
+</head>
+<body class="transition-colors duration-500">
+
+    <!-- TELA 0: TUTORIAL E REGRAS -->
+    <div id="tutorial-screen" class="flex flex-col items-center justify-center min-h-screen p-4">
+        <div class="w-full max-w-2xl bg-[var(--bg-secondary)] p-8 rounded-2xl shadow-2xl">
+            <h1 class="font-cinzel text-3xl font-bold text-center text-[var(--accent-primary)] tracking-wider">Termos do Oráculo</h1>
+            <div class="mt-6 space-y-4 text-[var(--text-primary)] text-left">
+                <p>Bem-vindo, buscador. Antes de prosseguir, compreenda a natureza deste diálogo. Você está prestes a iniciar uma conversa virtuosa, um ato de co-criação com o universo.</p>
+                <p>Este Oráculo opera sob o princípio da <span class="font-semibold text-[var(--accent-primary)]">ética e da vida virtuosa</span>. A energia que você emana em suas intenções será a mesma que retornará a você. Suas palavras são sementes; plante-as com sabedoria.</p>
+                <p>Este não é um canal para especulação, curiosidade vã ou teste. É um portal para o conhecimento ancestral, baseado na profunda conexão do ser humano com um universo vivo e pulsante de poder. Aproxime-se com respeito, clareza e propósito.</p>
+                <p class="mt-6 p-3 text-center bg-[var(--bg-primary)] rounded-lg text-sm text-[var(--text-secondary)]">
+                    <strong>Aviso Importante:</strong> Durante sua conversa, quando sentir que sua consulta está completa, digite <strong class="text-[var(--accent-primary)]">obrigado</strong> para que o ritual seja administrado pelo movimento espiritual do universo e disponibilizado para impressão.
+                </p>
+            </div>
+            <div class="mt-8">
+                <label class="flex items-center justify-center gap-3 cursor-pointer">
+                    <input type="checkbox" id="terms-checkbox" class="h-5 w-5 rounded bg-[var(--bg-primary)] border-[var(--bg-tertiary)] text-[var(--bg-accent)] focus:ring-[var(--bg-accent)]">
+                    <span class="text-[var(--text-primary)]">Li e compreendo os termos.</span>
+                </label>
+            </div>
+            <div class="mt-8 flex justify-end">
+                <button id="tutorial-button" class="w-full md:w-auto bg-[var(--bg-accent)] text-white font-bold py-3 px-8 rounded-lg opacity-50 cursor-not-allowed" disabled>Seguir</button>
+            </div>
+        </div>
+        <footer class="absolute bottom-4 text-center text-xs text-[var(--text-secondary)]">
+            <p>Desenvolvido por Montenegro Software</p>
+            <p>Contato: montenegroll@gmail.com - Engenheiro de Software</p>
+        </footer>
+    </div>
+
+    <!-- TELA 1: ESCOLHA DO CAMINHO -->
+    <div id="choice-screen" class="flex-col items-center justify-center min-h-screen p-4 hidden">
+        <h1 class="font-cinzel text-5xl font-bold text-center text-[var(--accent-primary)] tracking-widest">O Oráculo Aguarda</h1>
+        <p class="mt-4 text-lg text-center text-[var(--text-primary)]">Seu destino se desdobra a partir de sua intenção.</p>
+        <p class="mt-2 text-lg text-center text-[var(--text-primary)]">Qual caminho você trilhará hoje?</p>
+        <div class="flex flex-col md:flex-row gap-6 mt-12">
+            <button onclick="choosePath('light')" class="group relative w-64 p-6 bg-[var(--bg-secondary)] border-2 border-transparent hover:border-sky-400 rounded-xl shadow-lg text-left transition-all">
+                <h2 class="font-cinzel text-2xl font-bold text-sky-400">Caminho da Luz</h2>
+                <p class="mt-2 text-sm text-sky-200">Para rituais de criação, proteção, cura e clareza. A busca pela harmonia e crescimento.</p>
+            </button>
+            <button onclick="choosePath('dark')" class="group relative w-64 p-6 bg-[var(--bg-secondary)] border-2 border-transparent hover:border-purple-500 rounded-xl shadow-lg text-left transition-all">
+                <h2 class="font-cinzel text-2xl font-bold text-purple-400">Caminho das Sombras</h2>
+                <p class="mt-2 text-sm text-purple-200">Para rituais de influência, revelação de segredos e superação de obstáculos. O mergulho no oculto.</p>
+            </button>
+        </div>
+        <div class="absolute bottom-10 left-10">
+             <button onclick="navigate('tutorial-screen', 'choice-screen')" class="bg-[var(--bg-tertiary)] hover:opacity-80 text-white font-bold py-2 px-4 rounded-lg">Voltar</button>
+        </div>
+    </div>
+
+    <!-- TELA 2: CHAT COM O ORÁCULO -->
+    <div id="chat-container" class="w-full max-w-2xl mx-auto h-screen flex-col bg-[var(--bg-secondary)] shadow-2xl hidden">
+        <header class="p-4 border-b border-[var(--bg-tertiary)] flex justify-between items-center">
+            <button onclick="navigate('choice-screen', 'chat-container')" class="bg-[var(--bg-tertiary)] hover:opacity-80 text-white font-bold py-1 px-3 rounded-lg text-sm">Voltar</button>
+            <h1 id="chat-title" class="font-cinzel text-xl font-bold text-center text-[var(--accent-primary)] tracking-wider"></h1>
+            <div class="w-16"></div> <!-- Espaçador -->
+        </header>
+        <main id="chat-window" class="flex-1 p-4 space-y-4 overflow-y-auto flex flex-col"></main>
+        <div id="loading-indicator" class="px-4 py-2 hidden"><div class="flex items-center gap-2"><div class="loader"></div><p id="loading-text" class="text-sm"></p></div></div>
+        <footer id="chat-footer" class="p-4 border-t border-[var(--bg-tertiary)]">
+            <div class="flex items-center gap-2">
+                <input type="text" id="user-input" placeholder="Responda ao Oráculo..." class="flex-1 p-3 bg-[var(--bg-primary)] border border-[var(--bg-tertiary)] rounded-lg focus:ring-2 focus:ring-[var(--accent-primary)] outline-none">
+                <button id="send-button" class="bg-[var(--bg-accent)] hover:opacity-80 text-white font-bold p-3 rounded-lg transition-transform transform hover:scale-105">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- TELA 3: PAGAMENTO (MODAL PIX) -->
+    <div id="payment-screen" class="fixed inset-0 bg-black/80 flex-col items-center justify-center p-4 hidden z-40">
+        <div class="w-full max-w-md bg-[var(--bg-secondary)] p-8 rounded-2xl text-center">
+            <h2 class="font-cinzel text-3xl font-bold text-[var(--accent-primary)]">O Pacto Deve Ser Selado</h2>
+            <p id="payment-text" class="mt-4 text-[var(--text-primary)]">Para manifestar o ritual, aponte a câmera do seu celular para o QR Code ou use o código "Copia e Cola".</p>
+            
+            <div id="pix-loader" class="flex justify-center items-center h-48"><div class="loader"></div></div>
+            
+            <div id="pix-content" class="hidden">
+                <img id="pix-qrcode" src="" alt="PIX QR Code" class="w-48 h-48 mx-auto my-4 bg-white p-2 rounded-lg">
+                <div class="relative">
+                    <textarea id="pix-code" rows="3" readonly class="w-full p-2 text-xs bg-[var(--bg-primary)] border border-[var(--bg-tertiary)] rounded-lg text-center text-[var(--text-secondary)] resize-none"></textarea>
+                    <button onclick="copyPixCode()" class="absolute top-2 right-2 text-[var(--text-secondary)] hover:text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/><path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zM-1 7a.5.5 0 0 1 .5-.5h1v-1a.5.5 0 0 1 1 0v1h1a.5.5 0 0 1 0 1h-1v1a.5.5 0 0 1-1 0v-1h-1a.5.5 0 0 1-.5-.5z"/></svg>
+                    </button>
+                </div>
+                <span id="copy-feedback" class="text-green-400 text-xs h-4 block"></span>
+            </div>
+
+            <button onclick="cancelPayment()" class="mt-2 text-sm text-[var(--text-secondary)] hover:underline">Cancelar</button>
+        </div>
+    </div>
+    
+    <!-- TELA 4: RELATÓRIO FINAL -->
+    <div id="report-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 hidden z-50">
+        <div id="report-modal-content" class="bg-gray-50 text-gray-800 p-8 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto relative">
+            <button id="close-report-button" onclick="closeReport()" class="absolute top-4 right-4 text-gray-500 hover:text-black text-3xl">&times;</button>
+            <div id="report-content-inner"></div>
+            <div class="mt-8 text-center"><button id="print-button" onclick="window.print()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-lg">Imprimir Pergaminho</button></div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURAÇÃO ---
+        const API_PROXY_URL = '/.netlify/functions/chat';
+        const PAYMENT_PROXY_URL = '/.netlify/functions/create-payment';
+        const CHECK_PAYMENT_URL = '/.netlify/functions/check-payment';
+        const MAX_RETRIES = 3;
+
+        // --- ELEMENTOS DO DOM ---
+        const tutorialScreen = document.getElementById('tutorial-screen');
+        const termsCheckbox = document.getElementById('terms-checkbox');
+        const tutorialButton = document.getElementById('tutorial-button');
+        const choiceScreen = document.getElementById('choice-screen');
+        const chatContainer = document.getElementById('chat-container');
+        const chatWindow = document.getElementById('chat-window');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const paymentScreen = document.getElementById('payment-screen');
+        const paymentText = document.getElementById('payment-text');
+        const pixLoader = document.getElementById('pix-loader');
+        const pixContent = document.getElementById('pix-content');
+        const pixQrcode = document.getElementById('pix-qrcode');
+        const pixCode = document.getElementById('pix-code');
+        const copyFeedback = document.getElementById('copy-feedback');
+        const reportModal = document.getElementById('report-modal');
+
+        // --- ESTADO DA APLICAÇÃO ---
+        let conversationHistory = [];
+        let appPath = '';
+        let paymentCheckInterval = null;
+
+        const systemInstructions = {
+            light: `Você é um Oráculo da Luz, uma entidade sábia e benevolente. Seu objetivo é guiar o usuário a formular um ritual positivo. Comece fazendo uma anamnese com no máximo 4 perguntas abertas para entender a situação do usuário, para quem é o ritual (o 'alvo') e qual é a intenção (cura, proteção, prosperidade, etc.). Após as respostas, forneça uma resposta motivacional, oferecendo uma perspectiva de esperança e força baseada no que foi dito. Para concluir, peça honestamente para o usuário digitar 'obrigado' para confirmar que a consulta foi satisfatória e que podemos prosseguir para a criação do ritual.`,
+            dark: `Você é um Oráculo das Sombras, uma entidade enigmática e direta que lida com poder e autoconhecimento. Seu objetivo é guiar o usuário a formular um ritual de poder. Comece com uma anamnese de no máximo 4 perguntas incisivas para descobrir o alvo do ritual, a intenção (influência, quebra de barreiras, revelação de verdades ocultas) e a disposição do usuário. Após as respostas, ofereça uma resposta de pretendida motivação, um insight sobre o poder interior e as consequências, de forma séria e profunda. Para concluir, peça honestamente para o usuário digitar 'obrigado' para selar o pacto e prosseguir com a manifestação do ritual.`
+        };
+
+        // --- FUNÇÕES PRINCIPAIS ---
+        function navigate(to, from) {
+            document.getElementById(from).classList.add('hidden');
+            document.getElementById(from).classList.remove('flex', 'flex-col');
+            document.getElementById(to).classList.remove('hidden');
+            document.getElementById(to).classList.add('flex', 'flex-col');
+        }
+
+        function choosePath(path) {
+            appPath = path;
+            document.body.className = path === 'light' ? 'theme-light' : '';
+            
+            document.getElementById('chat-title').textContent = path === 'light' ? 'Diálogo com a Luz' : 'Pacto com as Sombras';
+            document.getElementById('loading-text').textContent = path === 'light' ? 'A Luz está respondendo...' : 'As Sombras sussurram...';
+
+            chatWindow.innerHTML = '';
+            conversationHistory = [{
+                role: 'system',
+                parts: [{ text: systemInstructions[appPath] }]
+            }];
+            
+            const firstMessage = path === 'light' 
+                ? 'As estrelas saúdam você. Para começar nossa jornada, me diga, qual é a principal preocupação em seu coração neste momento?'
+                : 'Você se aproxima das sombras em busca de poder. Para começar, diga-me qual obstáculo em seu caminho você mais deseja superar?';
+            
+            addMessage(firstMessage, 'ai');
+            conversationHistory.push({ role: 'model', parts: [{ text: firstMessage }] });
+            navigate('chat-container', 'choice-screen');
+        }
+
+        function addMessage(text, sender) {
+            const bubble = document.createElement('div');
+            bubble.classList.add('chat-bubble', `${sender}-bubble`);
+            bubble.textContent = text;
+            chatWindow.appendChild(bubble);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        async function fetchWithRetry(url, payload, retries = MAX_RETRIES) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.status === 503 && i < retries - 1) {
+                        const delay = Math.pow(2, i) * 1000;
+                        console.warn(`API sobrecarregada. Tentando novamente em ${delay}ms...`);
+                        addMessage(`O Oráculo encontra uma resistência cósmica. Tentando novamente...`, 'ai');
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue;
+                    }
+                    
+                    if (!response.ok) {
+                        let errorDetails = `Status: ${response.status}.`;
+                        try {
+                            const errorData = await response.json();
+                            errorDetails += ` Mensagem: ${errorData.error?.message || JSON.stringify(errorData)}`;
+                        } catch (e) {
+                            errorDetails += ` ${response.statusText}`;
+                        }
+                        throw new Error(`Erro na API. ${errorDetails}`);
+                    }
+
+                    return response.json();
+
+                } catch (error) {
+                    if (i === retries - 1) throw error;
+                }
+            }
+        }
+
+        async function sendMessageToAI() {
+            const userMessage = userInput.value.trim();
+            if (!userMessage) return;
+
+            addMessage(userMessage, 'user');
+            userInput.value = '';
+
+            if (userMessage.toLowerCase().includes('obrigado')) {
+                addMessage("O Oráculo compreende. O ritual está sendo tecido. Um momento...", 'ai');
+                document.getElementById('chat-footer').classList.add('hidden');
+                setTimeout(() => {
+                    handlePayment();
+                }, 2000);
+                return;
+            }
+
+            conversationHistory.push({ role: 'user', parts: [{ text: userMessage }] });
+            loadingIndicator.classList.remove('hidden');
+            sendButton.disabled = true;
+
+            const payload = { contents: conversationHistory.filter(c => c.role !== 'system'), systemInstruction: conversationHistory[0] };
+
+            try {
+                const data = await fetchWithRetry(API_PROXY_URL, payload);
+
+                if (!data.candidates || data.candidates.length === 0) {
+                    throw new Error("A resposta da API não contém candidatos. A resposta pode ter sido bloqueada por segurança.");
+                }
+                
+                const aiResponse = data.candidates[0].content.parts[0].text;
+                
+                addMessage(aiResponse, 'ai');
+                conversationHistory.push({ role: 'model', parts: [{ text: aiResponse }] });
+
+            } catch (error) {
+                console.error("Erro ao contatar o Oráculo:", error.message);
+                addMessage("Houve uma interferência nos planos astrais. Detalhes do erro foram registrados no console.", "ai");
+            } finally {
+                loadingIndicator.classList.add('hidden');
+                sendButton.disabled = false;
+                userInput.focus();
+            }
+        }
+
+        function cancelPayment() {
+            if (paymentCheckInterval) clearInterval(paymentCheckInterval);
+            paymentScreen.classList.add('hidden');
+            paymentScreen.classList.remove('flex');
+            document.getElementById('chat-footer').classList.remove('hidden');
+            addMessage("O Oráculo entende sua hesitação. Volte quando estiver preparado.", "ai");
+        }
+        
+        async function handlePayment() {
+            paymentScreen.classList.remove('hidden');
+            paymentScreen.classList.add('flex');
+            pixContent.classList.add('hidden');
+            paymentText.textContent = "Gerando seu PIX seguro...";
+            pixLoader.classList.remove('hidden');
+
+            try {
+                const response = await fetch(PAYMENT_PROXY_URL, { 
+                    method: 'POST',
+                    body: JSON.stringify({}) 
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Falha ao criar o PIX.');
+                }
+                
+                const data = await response.json();
+                
+                const qrCodeArtefact = data.pix.artefacts.find(a => a.name === 'barcode');
+                const textCodeArtefact = data.pix.artefacts.find(a => a.name === 'code');
+
+                pixQrcode.src = qrCodeArtefact.location;
+                pixCode.value = textCodeArtefact.content;
+
+                pixLoader.classList.add('hidden');
+                pixContent.classList.remove('hidden');
+                paymentText.textContent = "Aguardando confirmação do pagamento...";
+                
+                startPaymentPolling(data.checkoutId);
+
+            } catch (error) {
+                console.error('Erro no processo de pagamento:', error.message);
+                alert(`Erro no pagamento: ${error.message}`);
+                cancelPayment();
+            }
+        }
+
+        function startPaymentPolling(checkoutId) {
+            if (paymentCheckInterval) clearInterval(paymentCheckInterval);
+
+            paymentCheckInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(CHECK_PAYMENT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ checkoutId })
+                    });
+                    if (!response.ok) return;
+
+                    const data = await response.json();
+
+                    if (data.status === 'PAID') {
+                        clearInterval(paymentCheckInterval);
+                        handleSuccessfulPayment();
+                    }
+                } catch (error) {
+                    console.error('Erro ao verificar o status do pagamento:', error);
+                }
+            }, 5000); // Verifica a cada 5 segundos
+        }
+        
+        function copyPixCode() {
+            pixCode.select();
+            document.execCommand('copy');
+            copyFeedback.textContent = 'Copiado!';
+            setTimeout(() => { copyFeedback.textContent = '' }, 2000);
+        }
+
+        async function handleSuccessfulPayment() {
+            paymentScreen.classList.add('hidden');
+            paymentScreen.classList.remove('flex');
+            loadingIndicator.classList.remove('hidden');
+            
+            const finalPrompt = `Baseado em toda a nossa conversa anterior (excluindo a palavra 'obrigado'), gere um JSON com os seguintes campos: "alvo" (o nome da pessoa para quem é o ritual), "objetivo" (o que a pessoa quer alcançar), "frase_mistica" (uma frase de poder curta e enigmática no estilo do caminho escolhido), e "ritual_ocultista" (uma instrução curta e simbólica para um ritual físico). Responda APENAS com o JSON válido e nada mais.`;
+            conversationHistory.push({ role: 'user', parts: [{ text: finalPrompt }] });
+
+            const payload = { 
+                contents: conversationHistory.filter(c => c.role !== 'system'), 
+                systemInstruction: conversationHistory[0],
+                generationConfig: { responseMimeType: "application/json" }
+            };
+
+            try {
+                const data = await fetchWithRetry(API_PROXY_URL, payload);
+
+                if (!data.candidates || data.candidates.length === 0) {
+                    throw new Error("A resposta da API para o relatório não contém candidatos.");
+                }
+
+                const ritualJson = JSON.parse(data.candidates[0].content.parts[0].text);
+                generateReport(ritualJson);
+
+            } catch(error) {
+                console.error("Erro ao gerar o relatório final:", error.message);
+                addMessage("Falha na manifestação final. A energia se dissipou.", "ai");
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+
+        function generateReport(data) {
+            const reportHTML = `
+                <div class="text-center border-b-2 border-gray-300 pb-4 mb-6">
+                    <h2 class="font-cinzel text-3xl font-bold text-purple-900">Pergaminho do Ritual</h2>
+                    <p class="text-gray-600">Manifestado para: ${data.alvo}</p>
+                </div>
+                <div class="my-6 p-4 bg-gray-100 border-l-4 border-purple-300">
+                    <h3 class="font-cinzel text-lg font-bold text-gray-800">Intenção Declarada</h3>
+                    <p class="mt-2 text-gray-700 italic">"${data.objetivo}"</p>
+                </div>
+                <div class="my-6 text-center">
+                    <h3 class="font-cinzel text-lg font-bold text-gray-800">Palavra de Poder</h3>
+                    <p class="mt-2 text-2xl font-cinzel font-bold text-purple-900 tracking-wider">"${data.frase_mistica}"</p>
+                    <p class="mt-1 text-sm text-gray-500">Entoe com convicção e foco.</p>
+                </div>
+                <div class="my-6 p-4 bg-gray-100 border-l-4 border-purple-300">
+                    <h3 class="font-cinzel text-lg font-bold text-gray-800">Ato Ritualístico</h3>
+                    <p class="mt-2 text-gray-700">${data.ritual_ocultista}</p>
+                </div>
+                <p class="mt-8 text-center text-xs text-gray-500">O pacto está selado. A responsabilidade pela energia liberada é inteiramente sua. Aja com sabedoria.</p>
+            `;
+            document.getElementById('report-content-inner').innerHTML = reportHTML;
+            reportModal.classList.remove('hidden');
+        }
+
+        function closeReport() {
+            reportModal.classList.add('hidden');
+            window.location.reload();
+        }
+
+        // --- EVENT LISTENERS ---
+        termsCheckbox.addEventListener('change', () => {
+            if (termsCheckbox.checked) {
+                tutorialButton.disabled = false;
+                tutorialButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                tutorialButton.disabled = true;
+                tutorialButton.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        });
+        tutorialButton.addEventListener('click', () => navigate('choice-screen', 'tutorial-screen'));
+        sendButton.addEventListener('click', sendMessageToAI);
+        userInput.addEventListener('keypress', (e) => e.key === 'Enter' && sendMessageToAI());
+        
+    </script>
+</body>
+</html>
